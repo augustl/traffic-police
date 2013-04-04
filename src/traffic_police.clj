@@ -43,23 +43,12 @@
   [negotiators handler req]
   (((apply comp (reverse negotiators)) handler) req))
 
-(defmulti get-request-method (fn [req] (:_request-type req)))
-(defmethod get-request-method nil
-  [req]
-  (:request-method req))
-
-(defmulti assoc-route-params (fn [req match] (:_request-type req)))
-(defmethod assoc-route-params nil
-  [req match]
-  (assoc req :route-params match))
-
-(defmulti get-clout-compliant-req (fn [req] (:_request-type req)))
-(defmethod get-clout-compliant-req nil
-  [req]
-  req)
-
 (defn resources
-  [negotiator-fn & resources]
+  [& {:keys [negotiator get-request-method assoc-route-params get-clout-compliant-req resources]
+      :or {negotiator identity-negotiator
+           get-request-method :request-method
+           assoc-route-params (fn [req match] (assoc req :route-params match))
+           get-clout-compliant-req identity}}]
   (let [routes (map
                 (fn [resource]
                   (let [route (clout.core/route-compile (nth resource 0))
@@ -68,7 +57,7 @@
                     (fn [req]
                       (when-let [route-match (clout.core/route-matches route (get-clout-compliant-req req))]
                         (if-let [handler ((get-request-method req) handlers)]
-                          (negotiator-fn
+                          (negotiator
                            (fn [req]
                              (when-let [processed-req (run-preconditions preconditions req)]
                                (handler processed-req)))

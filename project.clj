@@ -1,4 +1,4 @@
-(defproject traffic-police "0.1.0"
+(defproject traffic-police "0.2.0"
   :description "Clojure path+method resource routing library"
   :url "http://github.com/augustl/traffic-police"
   :license {:name "BSD 3-clause license"}
