@@ -13,6 +13,14 @@
   (get-request-path [req] (or (:uri req) (:path-info req))) ;; TODO: Figure out why we need path-info.
   (assoc-route-params [req route-params] (assoc req :route-params route-params)))
 
+(defn- run-preconditions
+  [preconditions req]
+  (if (nil? req)
+    nil
+    (if (empty? preconditions)
+      req
+      (recur (rest preconditions) ((first preconditions) req)))))
+
 (defn- flatten-resource
   [parent tree-resource]
   (let [resource [(str (nth parent 0) (nth tree-resource 0))
@@ -24,14 +32,6 @@
      (mapcat
       #(flatten-resource resource %)
       (drop 3 tree-resource)))))
-
-(defn- run-preconditions
-  [preconditions req]
-  (if (nil? req)
-    nil
-    (if (empty? preconditions)
-      req
-      (recur (rest preconditions) ((first preconditions) req)))))
 
 (defn flatten-resources
   [resources]
