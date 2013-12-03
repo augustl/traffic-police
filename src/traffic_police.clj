@@ -56,25 +56,25 @@
   (((apply comp (reverse negotiators)) handler) req))
 
 (defn resources
-  [& {:keys [negotiator resources]
-      :or {negotiator identity-negotiator}}]
-  (let [routes (map
-                (fn [resource]
-                  (let [route (clout.core/route-compile (nth resource 0))
-                        preconditions (nth resource 1)
-                        handlers (nth resource 2)]
-                    (fn [req]
-                      (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-                        (if-let [handler ((get-request-method req) handlers)]
-                          (negotiator
-                           (fn [req]
-                             (when-let [processed-req (run-preconditions preconditions req)]
-                               (handler processed-req)))
-                           (assoc-route-params req route-match))
-                          {:status 405})))))
-                (flatten-resources resources))]
-    (fn [req]
-      (some #(% req) routes))))
+  ([r] (resources identity-negotiator r))
+  ([negotiator resources]
+     (let [routes (map
+                   (fn [resource]
+                     (let [route (clout.core/route-compile (nth resource 0))
+                           preconditions (nth resource 1)
+                           handlers (nth resource 2)]
+                       (fn [req]
+                         (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
+                           (if-let [handler ((get-request-method req) handlers)]
+                             (negotiator
+                              (fn [req]
+                                (when-let [processed-req (run-preconditions preconditions req)]
+                                  (handler processed-req)))
+                              (assoc-route-params req route-match))
+                             {:status 405})))))
+                   (flatten-resources resources))]
+       (fn [req]
+         (some #(% req) routes)))))
 
 (defmacro negotiate
   [& negotiators]

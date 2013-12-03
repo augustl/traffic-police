@@ -25,7 +25,6 @@
 (deftest handlers
   (testing "basic handler"
     (let [handler (t/resources
-                   :resources
                    [["/foo" identity {:get echo-handler}]])]
       (is (= "/foo"
              (:body (handler {:uri "/foo" :request-method :get}))))
@@ -34,7 +33,6 @@
 
   (testing "basic nested handler"
     (let [handler (t/resources
-                   :resources
                    [["/foo" identity {:get echo-handler}
                      ["/bar" identity {:get echo-handler}]]])]
       (is (= "/foo"
@@ -44,7 +42,6 @@
 
   (testing "basic nested handler with params"
     (let [handler (t/resources
-                   :resources
                    [["/foo" identity {:get echo-handler}
                      ["/:foo-id" identity {:get echo-handler}
                       ["/:bar-id" identity {:get echo-handler}]]]])]
@@ -55,7 +52,6 @@
 
   (testing "basic pre-condition"
     (let [handler (t/resources
-                   :resources
                    [["/foo/:foo-id" (fn [req] (if (= (-> req :route-params :foo-id) "123") req))
                      {:get echo-handler}]])]
       (is (= "/foo/123"
@@ -65,7 +61,6 @@
 
   (testing "nested pre-conditions"
     (let [handler (t/resources
-                   :resources
                    [["/foo" (fn [req] (assoc req :test1 "123"))
                      {}
                      ["/:foo-id" (fn [req] (assoc req :test2 (-> req :route-params :foo-id)))
@@ -77,7 +72,6 @@
 
   (testing "request method"
     (let [handler (t/resources
-                   :resources
                    [["/foo" identity {:get echo-handler :post echo-handler}]])]
       (is (= "/foo"
              (:body (handler {:uri "/foo" :request-method :get}))))
@@ -88,13 +82,11 @@
 
   (testing "basic negotiators"
     (let [handler (t/resources
-                   :negotiator
                    (t/negotiate
                     (fn [handler]
                       (fn [req] (handler (assoc req :test1 (str (:test1 req) "abc")))))
                     (fn [handler]
                       (fn [req] (handler (assoc req :test1 "123")))))
-                   :resources
                    [["/foo" identity {:get (fn [req] {:body (:test1 req)})}]])]
       (is (= "123abc"
              (:body (handler {:uri "/foo" :request-method :get})))))))
@@ -109,7 +101,6 @@
 (deftest custom-request-test
   (testing "bells and whistles"
     (let [handler (t/resources
-                   :resources
                    [["/foo" identity
                      {}
                      ["/:foo-id" identity
