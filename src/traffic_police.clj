@@ -59,7 +59,7 @@
                      (let [route (clout.core/route-compile route-path)]
                        (fn [req]
                          (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-                           (if-let [handler ((get-request-method req) route-handlers)]
+                           (if-let [handler (get route-handlers (get-request-method req))]
                              (negotiator
                               (fn [req]
                                 (when-let [processed-req (run-preconditions route-preconditions req)]
