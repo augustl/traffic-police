@@ -51,8 +51,8 @@
   [negotiators handler req]
   (((apply comp (reverse negotiators)) handler) req))
 
-(defn resources
-  ([r] (resources identity-negotiator r))
+(defn handler
+  ([r] (handler identity-negotiator r))
   ([negotiator r]
      (let [routes (map
                    (fn [[route-path route-preconditions route-handlers]]
