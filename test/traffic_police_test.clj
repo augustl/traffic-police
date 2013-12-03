@@ -99,6 +99,20 @@
       (is (= "123abc"
              (:body (handler {:uri "/foo" :request-method :get})))))))
 
-(deftest default-negotiator-with-passing-negotiator)
+(defrecord CustomRequest [fancy-method nice-path dem-route-params])
+(extend-protocol t/TrafficPoliceRequest
+  CustomRequest
+  (get-request-method [req] (:fancy-method req))
+  (get-request-path [req] (:nice-path req))
+  (assoc-route-params [req route-params] (assoc req :dem-route-params route-params)))
 
-(deftest default-negotiator-with-breaking-negotiator)
+(deftest custom-request-test
+  (testing "bells and whistles"
+    (let [handler (t/resources
+                   :resources
+                   [["/foo" identity
+                     {}
+                     ["/:foo-id" identity
+                      {:get (fn [req] {:body (:dem-route-params req)})}]]])]
+      (is (= {:foo-id "123"}
+             (:body (handler (CustomRequest. :get "/foo/123" nil))))))))

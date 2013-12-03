@@ -1,5 +1,17 @@
 (ns traffic-police
-  (:require clout.core))
+  (:require clout.core)
+  (:import clojure.lang.IPersistentMap))
+
+(defprotocol TrafficPoliceRequest
+  (get-request-method [req])
+  (get-request-path [req])
+  (assoc-route-params [req route-params]))
+
+(extend-protocol TrafficPoliceRequest
+  IPersistentMap
+  (get-request-method [req] (:request-method req))
+  (get-request-path [req] (or (:uri req) (:path-info req))) ;; TODO: Figure out why we need path-info.
+  (assoc-route-params [req route-params] (assoc req :route-params route-params)))
 
 (defn- flatten-resource
   [parent tree-resource]
@@ -44,18 +56,15 @@
   (((apply comp (reverse negotiators)) handler) req))
 
 (defn resources
-  [& {:keys [negotiator get-request-method assoc-route-params get-clout-compliant-req resources]
-      :or {negotiator identity-negotiator
-           get-request-method :request-method
-           assoc-route-params (fn [req match] (assoc req :route-params match))
-           get-clout-compliant-req identity}}]
+  [& {:keys [negotiator resources]
+      :or {negotiator identity-negotiator}}]
   (let [routes (map
                 (fn [resource]
                   (let [route (clout.core/route-compile (nth resource 0))
                         preconditions (nth resource 1)
                         handlers (nth resource 2)]
                     (fn [req]
-                      (when-let [route-match (clout.core/route-matches route (get-clout-compliant-req req))]
+                      (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
                         (if-let [handler ((get-request-method req) handlers)]
                           (negotiator
                            (fn [req]
