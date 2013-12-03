@@ -15,8 +15,7 @@
 
 (defn- run-preconditions
   [preconditions req]
-  (if (nil? req)
-    nil
+  (if (not (nil? req))
     (if (empty? preconditions)
       req
       (recur (rest preconditions) ((first preconditions) req)))))
