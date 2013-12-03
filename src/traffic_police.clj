@@ -57,7 +57,7 @@
 
 (defn resources
   ([r] (resources identity-negotiator r))
-  ([negotiator resources]
+  ([negotiator r]
      (let [routes (map
                    (fn [resource]
                      (let [route (clout.core/route-compile (nth resource 0))
@@ -72,7 +72,7 @@
                                   (handler processed-req)))
                               (assoc-route-params req route-match))
                              {:status 405})))))
-                   (flatten-resources resources))]
+                   (flatten-resources r))]
        (fn [req]
          (some #(% req) routes)))))
 
