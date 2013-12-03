@@ -21,29 +21,26 @@
       (recur (rest preconditions) ((first preconditions) req)))))
 
 (defn- flatten-resource
-  [parent tree-resource]
-  (let [resource [(str (nth parent 0) (nth tree-resource 0))
-                  (conj (nth parent 1)
-                        (nth tree-resource 1))
-                  (nth tree-resource 2)]]
+  [[parent-path parent-preconditions] [path precondition handlers & children]]
+  (let [resource [(str parent-path path)
+                  (conj parent-preconditions precondition)
+                  handlers]]
     (concat
      [resource]
      (mapcat
       #(flatten-resource resource %)
-      (drop 3 tree-resource)))))
+      children))))
 
 (defn flatten-resources
   [resources]
   (mapcat
-   (fn [tree-resource]
-     (let [resource [(nth tree-resource 0)
-                     [(nth tree-resource 1)]
-                     (nth tree-resource 2)]]
+   (fn [[path precondition handlers & child-resources]]
+     (let [root-resource [path [precondition] handlers]]
        (concat
-        [resource]
+        [root-resource]
         (mapcat
-         #(flatten-resource resource %)
-         (drop 3 tree-resource)))))
+         #(flatten-resource root-resource %)
+         child-resources))))
    resources))
 
 (defn identity-negotiator
@@ -58,16 +55,14 @@
   ([r] (resources identity-negotiator r))
   ([negotiator r]
      (let [routes (map
-                   (fn [resource]
-                     (let [route (clout.core/route-compile (nth resource 0))
-                           preconditions (nth resource 1)
-                           handlers (nth resource 2)]
+                   (fn [[route-path route-preconditions route-handlers]]
+                     (let [route (clout.core/route-compile route-path)]
                        (fn [req]
                          (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-                           (if-let [handler ((get-request-method req) handlers)]
+                           (if-let [handler ((get-request-method req) route-handlers)]
                              (negotiator
                               (fn [req]
-                                (when-let [processed-req (run-preconditions preconditions req)]
+                                (when-let [processed-req (run-preconditions route-preconditions req)]
                                   (handler processed-req)))
                               (assoc-route-params req route-match))
                              {:status 405})))))
