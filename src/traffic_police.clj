@@ -35,10 +35,7 @@
 
 (defn flatten-resources
   [resources]
-  (mapcat
-   (fn [resource]
-     (flatten-resource ["" []] resource))
-   resources))
+  (mapcat #(flatten-resource ["" []] %) resources))
 
 (defn compile-resources
   [resources middleware-wrapper]
