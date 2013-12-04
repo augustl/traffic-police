@@ -5,13 +5,15 @@
 (defprotocol TrafficPoliceRequest
   (get-request-method [req])
   (get-request-path [req])
-  (assoc-route-params [req route-params]))
+  (assoc-route-params [req route-params])
+  (get-method-not-allowed-response [req]))
 
 (extend-protocol TrafficPoliceRequest
   IPersistentMap
   (get-request-method [req] (:request-method req))
   (get-request-path [req] (or (:uri req) (:path-info req))) ;; TODO: Figure out why we need path-info.
-  (assoc-route-params [req route-params] (assoc req :route-params route-params)))
+  (assoc-route-params [req route-params] (assoc req :route-params route-params))
+  (get-method-not-allowed-response [req] {:status 405}))
 
 (defn- run-preconditions
   [preconditions req]
@@ -65,7 +67,7 @@
                                 (when-let [processed-req (run-preconditions route-preconditions req)]
                                   (handler processed-req)))
                               (assoc-route-params req route-match))
-                             {:status 405})))))
+                             (get-method-not-allowed-response req))))))
                    (flatten-resources r))]
        (fn [req]
          (some #(% req) routes)))))
