@@ -6,7 +6,7 @@ A routing library for Clojure. Works with Ring out of the box. Can be extended t
 
 One of the value adds of traffic-police is a resources-like mindset where you can nest paths.
 
-```clojure
+```clj
 (require '[traffic-police :as t])
 
 (t/handler
@@ -24,7 +24,7 @@ In this case, GET /things will call the first handler, and GET /things/subthings
 
 When the URL contains data that needs to be present for the route to match, you can use preconditions to generalize this behaviour.
 
-```clojure
+```clj
 (defn get-single-user-precondition [req]
   (if-let [user (somehow-get-the-user (-> req :route-params :user-id))]
     (assoc req :user user)))
@@ -53,7 +53,7 @@ A problem with traditional Ring middlewares is that they are always called. Let'
 
 traffic-police supports automatically wrapping all your actual handler functions in middlewares, so that the midldewares doesn't run until _after_ the route has matched. The downside to this approach is that you will have multiple instances of a middleware, using more memory and potentially running expensive middleware setups many times. This only happens once when you call `(t/handler)`, though.
 
-```clojure
+```clj
 (t/handler
   (fn [handler]
     (-> handler
@@ -69,7 +69,7 @@ These middlewares will _only run after the routing has succeeded_. This makes it
 
 If you have multiple handlers, there's a convenience function for that. You can compose any handlers, such as the ones created by compojure, or just small functions you in-line.
 
-```clojure
+```clj
 (t/chained-handlers
   (t/handler (fn [handler] (-> handler wrap-auth-redirection))
              [["/users" identity {:get list-users-handler}]])
@@ -84,7 +84,7 @@ This basically just does `(some #(% req) handlers)`, meaning the first handler t
 
 A Ring handler is just a function that takes a request and returns a response. Why would we limit ourselves to Ring? Let's create our own arbitrary request thingie.
 
-```clojure
+```clj
 (def my-handler
   (t/handler
      [["/users" identity {:get (fn [] {:my-status "ok")}]]))
