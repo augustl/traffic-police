@@ -26,10 +26,12 @@ When the URL contains data that needs to be present for the route to match, you 
 
 ```clj
 (defn get-single-user-precondition [req]
+  "Return nil to halt routing at this point."
   (if-let [user (somehow-get-the-user (-> req :route-params :user-id))]
     (assoc req :user user)))
 
 (defn show-user-handler [req]
+  "This is only called if the preconditions returns something truthy!"
   {:status 200 :body (user-to-json (:user req))})
 
 (t/handler
