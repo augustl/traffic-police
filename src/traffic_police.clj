@@ -49,11 +49,6 @@
              (get-method-not-allowed-response req))))))
    (flatten-resources resources)))
 
-(defn identity-middleware-wrapper
-  [handler]
-  (fn [req]
-    (handler req)))
-
 (defn chained-handlers
   "Chains a list of request handlers, returning the response of the first
    handler in the list that returns something truthy."
@@ -63,7 +58,7 @@
 
 (defn handler
   ([resources]
-     (handler identity-middleware-wrapper resources))
+     (handler identity resources))
   ([middleware-wrapper resources]
      (apply chained-handlers (compile-resources resources middleware-wrapper))))
 
