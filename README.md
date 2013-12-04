@@ -1,6 +1,6 @@
 # traffic-police
 
-A routing library for Clojure. Works with Ring out of the box. Can be extended to support any request/response scenario using a method+path semantic for routing.
+A routing library for Clojure. Works with Ring out of the box. Can be extended to support any request/response scenario using a method+path semantic for routing. Clout is used for path matching (same as Compojure).
 
 ## Nested routes
 
