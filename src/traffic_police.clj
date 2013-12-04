@@ -63,9 +63,6 @@
      (apply chained-handlers (compile-resources resources middleware-wrapper))))
 
 (defmacro r
-  "The only purpose of this macro is to construct a vector identical
-   to its arguments. The `r` function call makes the nested structure
-   look better. You're free to just create the nested vector directiy
-   without using this macro."
+  "Convenience macro for a larger indentation level in most editors."
   [path precondition handlers & children]
   `[~path ~precondition ~handlers ~@children])
