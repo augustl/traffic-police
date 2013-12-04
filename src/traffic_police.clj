@@ -27,9 +27,7 @@
   (let [resource [(str parent-path path)
                   (conj parent-preconditions precondition)
                   handlers]]
-    (concat
-     [resource]
-     (mapcat #(flatten-resource resource %) children))))
+    (list* resource (mapcat #(flatten-resource resource %) children))))
 
 (defn flatten-resources
   [resources]
