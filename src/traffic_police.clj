@@ -36,13 +36,8 @@
 (defn flatten-resources
   [resources]
   (mapcat
-   (fn [[path precondition handlers & child-resources]]
-     (let [root-resource [path [precondition] handlers]]
-       (concat
-        [root-resource]
-        (mapcat
-         #(flatten-resource root-resource %)
-         child-resources))))
+   (fn [resource]
+     (flatten-resource ["" []] resource))
    resources))
 
 (defn compile-resources
