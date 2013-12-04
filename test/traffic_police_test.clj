@@ -76,15 +76,20 @@
       (is (= 405
              (:status (handler {:uri "/foo" :request-method :delete}))))))
 
-  (testing "basic negotiators"
-    (let [handler (t/handler
-                   (t/negotiate
-                    (fn [handler]
-                      (fn [req] (handler (assoc req :test1 (str (:test1 req) "abc")))))
-                    (fn [handler]
-                      (fn [req] (handler (assoc req :test1 "123")))))
-                   [["/foo" identity {:get (fn [req] {:body (:test1 req)})}]])]
-      (is (= "123abc"
+  (testing "basic middleware wrapper"
+    (let [wrap-test1-appender (fn [handler]
+                                (fn [req]
+                                  (handler (assoc req :test1 (str (:test1 req) "abc")))))
+          wrap-test1-assigner (fn [handler]
+                                (fn [req]
+                                  (handler (assoc req :test1 "123"))))
+          handler (t/handler
+                   (fn [handler]
+                     (-> handler
+                         wrap-test1-appender
+                         wrap-test1-assigner))
+                   [["/foo" (fn [req] (assoc req :test2 "wat")) {:get (fn [req] {:body (str (:test1 req) "-" (:test2 req))})}]])]
+      (is (= "123abc-wat"
              (:body (handler {:uri "/foo" :request-method :get})))))))
 
 (defrecord CustomRequest [fancy-method nice-path dem-route-params])

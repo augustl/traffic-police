@@ -45,37 +45,29 @@
          child-resources))))
    resources))
 
-(defn identity-negotiator
-  [handler req]
-  (handler req))
-
-(defn default-negotiator
-  [negotiators handler req]
-  (((apply comp (reverse negotiators)) handler) req))
+(defn identity-middleware-wrapper
+  [handler]
+  (fn [req]
+    (handler req)))
 
 (defn handler
-  ([r] (handler identity-negotiator r))
-  ([negotiator r]
+  ([r] (handler identity-middleware-wrapper r))
+  ([middleware-wrapper r]
      (let [routes (map
                    (fn [[route-path route-preconditions route-handlers]]
                      (let [route (clout.core/route-compile route-path)]
                        (fn [req]
                          (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
                            (if-let [handler (get route-handlers (get-request-method req))]
-                             (negotiator
-                              (fn [req]
-                                (when-let [processed-req (run-preconditions route-preconditions req)]
-                                  (handler processed-req)))
+                             ((middleware-wrapper
+                               (fn [req]
+                                 (when-let [processed-req (run-preconditions route-preconditions req)]
+                                   (handler processed-req))))
                               (assoc-route-params req route-match))
                              (get-method-not-allowed-response req))))))
                    (flatten-resources r))]
        (fn [req]
          (some #(% req) routes)))))
-
-(defmacro negotiate
-  [& negotiators]
-  `(fn [handler# req#]
-     (~default-negotiator [~@negotiators] handler# req#)))
 
 (defn chained-handlers
   [& handlers]
