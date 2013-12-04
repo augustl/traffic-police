@@ -6,10 +6,6 @@
   [req]
   {:status 200 :body (:uri req)})
 
-;; TODO: Write more tests. The code in src/ is a copy/paste
-;; from another project where it was integration tested via
-;; the tests for the app itself.
-
 (deftest flattening-resources
   (let [fn-a (fn [])
         fn-b (fn [])
