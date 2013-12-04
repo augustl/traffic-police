@@ -60,7 +60,8 @@
     (some #(% req) handlers)))
 
 (defn handler
-  ([resources] (handler identity-middleware-wrapper resources))
+  ([resources]
+     (handler identity-middleware-wrapper resources))
   ([middleware-wrapper resources]
      (apply chained-handlers (compile-resources resources middleware-wrapper))))
 
