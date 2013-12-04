@@ -93,7 +93,36 @@
                          wrap-test1-assigner))
                    [["/foo" (fn [req] (assoc req :test2 "wat")) {:get (fn [req] {:body (str (:test1 req) "-" (:test2 req))})}]])]
       (is (= "123abc-wat"
-             (:body (handler {:uri "/foo" :request-method :get})))))))
+             (:body (handler {:uri "/foo" :request-method :get}))))))
+
+  (testing "nested middleware wrapper"
+    (let [wrap-test-appender (fn [handler]
+                               (fn [req]
+                                 (handler (assoc req :test "omgwat"))))
+          handler (t/handler
+                   (fn [handler]
+                     (-> handler
+                         wrap-test-appender))
+                   [["/foo" identity {}
+                     ["/bar" identity {:get (fn [req] {:body (:test req)})}]]])]
+      (is (= "omgwat"
+             (:body (handler {:uri "/foo/bar" :request-method :get}))))))
+
+  (testing "middleware wrapper runs before precinditions"
+    (let [wrap-test-appender (fn [handler]
+                               (fn [req]
+                                 (let [res (handler (assoc req :test "omg"))]
+                                   (assoc res :other-thing "hmz"))))
+          handler (t/handler
+                   (fn [handler]
+                     (-> handler
+                         wrap-test-appender))
+                   [["/foo" (fn [req] (assoc req :test (str (:test req) "wat")))
+                     {:get (fn [req] {:body (:test req)})}]])]
+      (is (= "omgwat"
+             (:body (handler {:uri "/foo" :request-method :get}))))
+      (is (= "hmz"
+             (:other-thing (handler {:uri "/foo" :request-method :get})))))))
 
 (defrecord CustomRequest [fancy-method nice-path dem-route-params])
 (extend-protocol t/TrafficPoliceRequest
