@@ -40,12 +40,19 @@
      (let [route (clout.core/route-compile route-path)
            wrapped-route-handlers (zipmap
                                    (keys route-handlers)
-                                   (map middleware-wrapper (vals route-handlers)))]
+                                   (map
+                                    (fn [handler]
+                                      (middleware-wrapper
+                                       (fn [req]
+                                         (when-let [processed-req (run-preconditions (:__tp-preconditions req) req)]
+                                           (handler processed-req)))))
+                                    (vals route-handlers)))]
        (fn [req]
          (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
            (if-let [handler (get wrapped-route-handlers (get-request-method req))]
-             (when-let [processed-req (run-preconditions route-preconditions (assoc-route-params req route-match))]
-               (handler processed-req))
+             (handler (-> req
+                          (assoc-route-params route-match)
+                          (assoc :__tp-preconditions route-preconditions)))
              (get-method-not-allowed-response req))))))
    (flatten-resources resources)))
 
