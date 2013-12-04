@@ -45,27 +45,31 @@
          child-resources))))
    resources))
 
+(defn compile-resources
+  [resources middleware-wrapper]
+  (map
+   (fn [[route-path route-preconditions route-handlers]]
+     (let [route (clout.core/route-compile route-path)
+           wrapped-route-handlers (zipmap
+                                   (keys route-handlers)
+                                   (map middleware-wrapper (vals route-handlers)))]
+       (fn [req]
+         (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
+           (if-let [handler (get wrapped-route-handlers (get-request-method req))]
+             (when-let [processed-req (run-preconditions route-preconditions (assoc-route-params req route-match))]
+               (handler processed-req))
+             (get-method-not-allowed-response req))))))
+   (flatten-resources resources)))
+
 (defn identity-middleware-wrapper
   [handler]
   (fn [req]
     (handler req)))
 
 (defn handler
-  ([r] (handler identity-middleware-wrapper r))
-  ([middleware-wrapper r]
-     (let [routes (map
-                   (fn [[route-path route-preconditions route-handlers]]
-                     (let [route (clout.core/route-compile route-path)
-                           wrapped-route-handlers (zipmap
-                                                   (keys route-handlers)
-                                                   (map middleware-wrapper (vals route-handlers)))]
-                       (fn [req]
-                         (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-                           (if-let [handler (get wrapped-route-handlers (get-request-method req))]
-                             (when-let [processed-req (run-preconditions route-preconditions (assoc-route-params req route-match))]
-                               (handler processed-req))
-                             (get-method-not-allowed-response req))))))
-                   (flatten-resources r))]
+  ([resources] (handler identity-middleware-wrapper resources))
+  ([middleware-wrapper resources]
+     (let [routes (compile-resources resources middleware-wrapper)]
        (fn [req]
          (some #(% req) routes)))))
 
