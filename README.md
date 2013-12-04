@@ -2,6 +2,10 @@
 
 A routing library for Clojure. Works with Ring out of the box. Can be extended to support any request/response scenario using a method+path semantic for routing. Clout is used for path matching (same as Compojure).
 
+## Installing
+
+Unfortunately, the version documented hree (0.3) is not in clojars yet. Stay tuned!
+
 ## Nested routes
 
 One of the value adds of traffic-police is a resources-like mindset where you can nest paths.
