@@ -54,17 +54,15 @@
   (fn [req]
     (handler req)))
 
-(defn handler
-  ([resources] (handler identity-middleware-wrapper resources))
-  ([middleware-wrapper resources]
-     (let [routes (compile-resources resources middleware-wrapper)]
-       (fn [req]
-         (some #(% req) routes)))))
-
 (defn chained-handlers
   [& handlers]
   (fn [req]
     (some #(% req) handlers)))
+
+(defn handler
+  ([resources] (handler identity-middleware-wrapper resources))
+  ([middleware-wrapper resources]
+     (apply chained-handlers (compile-resources resources middleware-wrapper))))
 
 (defmacro r
   "The only purpose of this macro is to construct a vector identical
