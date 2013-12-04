@@ -55,6 +55,8 @@
     (handler req)))
 
 (defn chained-handlers
+  "Chains a list of request handlers, returning the response of the first
+   handler in the list that returns something truthy."
   [& handlers]
   (fn [req]
     (some #(% req) handlers)))
