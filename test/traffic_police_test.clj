@@ -9,14 +9,17 @@
 (deftest flattening-resources
   (let [fn-a (fn [])
         fn-b (fn [])
-        fn-c (fn [])]
+        fn-c (fn [])
+        fn-d (fn [])]
     (is (= (t/flatten-resources
             [["/foo" fn-a {}
               ["/bar" fn-b {}]
-              ["/baz" fn-c {}]]])
+              ["/baz" fn-c {}
+               ["/maz" fn-d {}]]]])
            [["/foo" [fn-a] {}]
             ["/foo/bar" [fn-a fn-b] {}]
-            ["/foo/baz" [fn-a fn-c] {}]]))))
+            ["/foo/baz" [fn-a fn-c] {}]
+            ["/foo/baz/maz" [fn-a fn-c fn-d] {}]]))))
 
 (deftest handlers
   (testing "basic handler"
