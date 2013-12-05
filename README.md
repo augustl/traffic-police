@@ -4,7 +4,7 @@ A routing library for Clojure. Works with Ring out of the box. Can be extended t
 
 ## Installing
 
-Unfortunately, the version documented here (0.3) is not in clojars yet. Stay tuned!
+Add `[traffic-police "0.3.0"]` to `:dependencies` in your `project.clj`.
 
 ## Nested routes
 
