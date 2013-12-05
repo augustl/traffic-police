@@ -17,7 +17,8 @@ One of the value adds of traffic-police is a resources-like mindset where you ca
   [(t/r "/things" identity
         {:get (fn [req] {:status 200 :body "Things here!"})}
         (t/r "/subthings" identity
-             {:get (fn [req] {:status 200 :body "Subthings here"})}))
+             {:get (fn [req] {:status 200 :body "Subthings here"
+              :post some-other-handler-here})}))
    (t/r "/foos/:foo-id/test" identity
         {:post (fn [req] {:status 201 :body "Foos created"})})])
 ```
