@@ -29,7 +29,7 @@ In this case, GET /things will call the first handler, and GET /things/subthings
 When the URL contains data that needs to be present for the route to match, you can use preconditions to generalize this behaviour.
 
 ```clj
-(defn get-single-user-precondition [req]
+(defn get-user-precondition [req]
   "Return nil to halt routing at this point."
   (if-let [user (somehow-get-the-user (-> req :route-params :user-id))]
     (assoc req :user user)))
@@ -42,15 +42,39 @@ When the URL contains data that needs to be present for the route to match, you 
   [["/users" identity
     {:get list-users-handler
      :post create-user-handler}
-    ["/:user-id" get-single-user-precondition
+    ["/:user-id" get-user-precondition
      {:get show-user-handler
       :put update-user-handler
       :delete delete-user-handler}]]])
 ```
 
-The show-user-handler doesn't have to check if the user actually exists! Since the get-single-user-precondition returns nil when the user is not found, routing will fail, and the show-user-handler will not be invoked.
+The show-user-handler doesn't have to check if the user actually exists! Since the get-user-precondition returns nil when the user is not found, routing will fail, and the show-user-handler will not be invoked.
 
-This is also great for nesting. /users/123/friends/1 will not route if the user of ID 123 doesn't exist, using the very same function to get the user as /users/123 will.
+## Nesting preconditions
+
+Extending on the user scenario above:
+
+```clj
+(defn get-project-precondition [req]
+  "We know that (:user req) exists, because of precondition nesting!"
+  (if-let [project (find-project-for-user (:user req) (-> req :route-params :project-id))]
+    (assoc req :project project)))
+
+(t/handler
+  [["/users" identity
+    {:get list-users-handler
+     :post create-user-handler}
+    ["/:user-id" get-user-precondition
+     {:get show-user-handler
+      :put update-user-handler
+      :delete delete-user-handler}
+     ["/projects" identity
+       {:get list-projects}
+       ["/:project-id" get-project-precondition
+        {:get show-project}]]]]])
+```
+
+Now, a GET /users/123/projects/456 will call both preconditoins. If the user 123 does not exist, the project precondition will not be called, and routing will fail (404).
 
 
 ## Middlewares post path matching
