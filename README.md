@@ -14,12 +14,12 @@ One of the value adds of traffic-police is a resources-like mindset where you ca
 (require '[traffic-police :as t])
 
 (t/handler
-  [["/things" identity
-    {:get (fn [req] {:status 200 :body "Things here!"})}
-    ["/subthings" identity
-     {:get (fn [req] {:status 200 :body "Subthings here"})}]]
-   ["/foos/:foo-id/test" identity
-    {:post (fn [req] {:status 201 :body "Foos created"})}]])
+  [(t/r "/things" identity
+        {:get (fn [req] {:status 200 :body "Things here!"})}
+        (t/r "/subthings" identity
+             {:get (fn [req] {:status 200 :body "Subthings here"})}))
+   (t/r "/foos/:foo-id/test" identity
+        {:post (fn [req] {:status 201 :body "Foos created"})})])
 ```
 
 In this case, GET /things will call the first handler, and GET /things/subthings will call the second handler. POST /foos/123/test will call the third handler, as it's not nested under /things. The value "123" will be available on the request, in `:route-params`.
@@ -39,13 +39,13 @@ When the URL contains data that needs to be present for the route to match, you 
   {:status 200 :body (user-to-json (:user req))})
 
 (t/handler
-  [["/users" identity
-    {:get list-users-handler
-     :post create-user-handler}
-    ["/:user-id" get-user-precondition
-     {:get show-user-handler
-      :put update-user-handler
-      :delete delete-user-handler}]]])
+  [(t/r "/users" identity
+        {:get list-users-handler
+         :post create-user-handler}
+        (t/r "/:user-id" get-user-precondition
+             {:get show-user-handler
+              :put update-user-handler
+              :delete delete-user-handler}))])
 ```
 
 The show-user-handler doesn't have to check if the user actually exists! Since the get-user-precondition returns nil when the user is not found, routing will fail, and the show-user-handler will not be invoked.
@@ -61,17 +61,17 @@ Extending on the user scenario above:
     (assoc req :project project)))
 
 (t/handler
-  [["/users" identity
-    {:get list-users-handler
-     :post create-user-handler}
-    ["/:user-id" get-user-precondition
-     {:get show-user-handler
-      :put update-user-handler
-      :delete delete-user-handler}
-     ["/projects" identity
-       {:get list-projects}
-       ["/:project-id" get-project-precondition
-        {:get show-project}]]]]])
+  [(t/r "/users" identity
+        {:get list-users-handler
+         :post create-user-handler}
+        (t/r "/:user-id" get-user-precondition
+             {:get show-user-handler
+              :put update-user-handler
+              :delete delete-user-handler}
+             (t/r "/projects" identity
+                  {:get list-projects}
+                  (t/r "/:project-id" get-project-precondition
+                       {:get show-project}))))])
 ```
 
 Now, a GET /users/123/projects/456 will call both preconditoins. If the user 123 does not exist, the project precondition will not be called, and routing will fail (404).
@@ -89,8 +89,8 @@ traffic-police supports automatically wrapping all your actual handler functions
     (-> handler
         wrap-authentication-middleware
         ring.middleware.content-type/wrap-content-type))
-  [["/users" identity
-    {:get list-users-handler}]])
+  [(t/r "/users" identity
+        {:get list-users-handler})])
 ```
 
 These middlewares will _only run after the routing has succeeded_. This makes it easy to chain multiple handlers and have them be arbitrarily composable, and not depend on being composed in a specific order.
@@ -102,8 +102,8 @@ If you have multiple handlers, there's a convenience function for that. You can 
 ```clj
 (t/chained-handlers
   (t/handler (fn [handler] (-> handler wrap-auth-redirection))
-             [["/users" identity {:get list-users-handler}]])
-  (t/handler [["/ping" identity {:get (fn [req] {:status 200 :body "pong"})}]])
+             [(t/r "/users" identity {:get list-users-handler})])
+  (t/handler [(t/r "/ping" identity {:get (fn [req] {:status 200 :body "pong"})})])
   my-compojure-route
   (fn [req] (if (= (:whatever req) "foo") {:status 200 :body "whatever was foo"})))
 ```
@@ -117,7 +117,7 @@ A Ring handler is just a function that takes a request and returns a response. W
 ```clj
 (def my-handler
   (t/handler
-     [["/users" identity {:get (fn [] {:my-status "ok")}]]))
+     [(t/r "/users" identity {:get (fn [] {:my-status "ok"})})]))
 
 (defrecord CustomRequest [fancy-method nice-path])
 (extend-protocol t/TrafficPoliceRequest
@@ -133,6 +133,21 @@ A Ring handler is just a function that takes a request and returns a response. W
 
 (my-handler (CustomRequest. :get "/users"))
 ;; {:my-status "ok"}
+```
+
+## The value of values
+
+The `(t/r)` macro is optional, it's just there because most editors will indent in a way that makes the nesting more readable. Just pass a raw list if you want to.
+
+```clj
+(t/handler
+  [(t/r "/things" identity
+        {:get (fn [req] {:status 200 :body "Things here!"})})])
+
+;; Equivalent
+(t/handler
+  [["/things" identity
+    {:get (fn [req] {:status 200 :body "Things here!"})}]])
 ```
 
 ## Example: Using with ZeroMQ
