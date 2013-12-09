@@ -26,11 +26,10 @@ The `handler` function returns a plain ring handler.
 
 (def app-handler
   (t/handler
-    ;; Wraps the handler in middlewares. The middleware will
-    ;; execute _after_ routing, so you can do things like
-    ;; redirects and other chain breaks without affecting
-    ;; other routes than the ones in this list.
     (fn [handler]
+      ;; Middlewares will run _after_ routing when wrapping here! So
+      ;; you can safely do redirects etc without affecting other
+      ;; handlers.
       (-> handler
           wrap-params
           wrap-my-custom-login-middleware))
@@ -62,6 +61,7 @@ The `handler` function returns a plain ring handler.
 
 * GET /projects - projects-controller/list-projects is called.
 * GET /projects/123 - projects-controller/get-project is called. But first, the get-project-precondition function is called. This function will access (-> req :url-params :project-id) and find the project in the database. If this function returns nil, routing will halt. If it returns the full request map, routing continues.
+* GET /projects/123/todos - nesting will first call the precondition to find the project, so you only have to write that code once.
 
 ```clj
 (defn get-project-precondition
