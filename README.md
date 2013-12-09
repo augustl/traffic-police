@@ -16,7 +16,7 @@ It's convenient to require traffic-police as t.
 
 The `handler` function returns a plain ring handler.
 
-```
+```clj
 ;; In project.clj
   :plugins [[lein-ring "0.8.5"]
   :ring {:handler myapp.server/lein-ring-app-handler}]
