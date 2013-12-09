@@ -6,6 +6,79 @@ A routing library for Clojure. Works with Ring out of the box. Can be extended t
 
 Add `[traffic-police "0.3.0"]` to `:dependencies` in your `project.clj`.
 
+## Basic usage
+
+It's convenient to require traffic-police as t.
+
+```clj
+(require '[traffic-police :as t])
+```
+
+The `handler` function returns a plain ring handler.
+
+```
+;; In project.clj
+  :plugins [[lein-ring "0.8.5"]
+  :ring {:handler myapp.server/lein-ring-app-handler
+         :init myapp.server/lein-ring-init}]
+
+;; In src/myapp/server.clj
+(ns myapp.server)
+
+(def app-handler
+  (t/handler
+    ;; Wraps the handler in middlewares. The middleware will
+    ;; execute _after_ routing, so you can do things like
+    ;; redirects and other chain breaks without affecting
+    ;; other routes than the ones in this list.
+    (fn [handler]
+      (-> handler
+          wrap-params
+          wrap-my-custom-login-middleware))
+    ;; Routes are nested naturally. The function after the path
+    ;; is a precondition, which can return nil and cause a 404.
+    ;; Preconditions also work when nested. See more docs below.
+    (t/r "/projects" identity
+         {:get projects-controller/list-projects
+          :post projects-controller/create-project}
+         (t/r "/:project-id" projects-controller/get-project-precondition
+              {:get projects-controller/get-project
+               :put projects-controller/update-project
+               :delete projects-controller/deleteproject}
+              (t/r "/todos" identity
+                   {:get list-todos})))))
+
+(def login-handler
+  (t/handler
+    ;; No middleware wrapping here
+    (t/r "/login" identity
+         {:post logins-controller/log-in})))
+
+(def lein-ring-app-handler
+  (t/chained-handlers
+    app-handler
+    login-handler
+    (fn [req] {:status 200 :body "Neither app nor login responded."})))
+```
+
+* GET /projects - projects-controller/list-projects is called.
+* GET /projects/123 - projects-controller/get-project is called. But first, the get-project-precondition function is called. This function will access (-> req :url-params :project-id) and find the project in the database. If this function returns nil, routing will halt. If it returns the full request map, routing continues.
+
+```clj
+(defn get-project-precondition
+  [req]
+  ;; Returns nil if ask-db-for-project returns nil
+  (if-let [project (ask-db-for-project (-> req :url-params :project-id))]
+    ;; Return full req but with project assoced onto it, so we don't have to
+    ;; read it form the db again
+    (assoc req :project project)))
+
+;; No need to do any 404 checks here, the precondition takes care of that for us!
+(defn get-project
+  [req]
+  {:status 200 :body (str "Project " (-> req :project :name))})
+```
+
 ## Nested routes
 
 One of the value adds of traffic-police is a resources-like mindset where you can nest paths.
