@@ -19,8 +19,7 @@ The `handler` function returns a plain ring handler.
 ```
 ;; In project.clj
   :plugins [[lein-ring "0.8.5"]
-  :ring {:handler myapp.server/lein-ring-app-handler
-         :init myapp.server/lein-ring-init}]
+  :ring {:handler myapp.server/lein-ring-app-handler}]
 
 ;; In src/myapp/server.clj
 (ns myapp.server)
