@@ -36,26 +36,26 @@ The `handler` function returns a plain ring handler.
     ;; Routes are nested naturally. The function after the path
     ;; is a precondition, which can return nil and cause a 404.
     ;; Preconditions also work when nested. See more docs below.
-    (t/r "/projects" identity
-         {:get projects-controller/list-projects
-          :post projects-controller/create-project}
-         ;; Preconditions are called before any handlers, both here
-         ;; and nested. Should return the req (possibly with modifications)
-         ;; or nil to cause a 404.
-         (t/r "/:project-id" projects-controller/get-project-precondition
-              {:get projects-controller/get-project
-               :put projects-controller/update-project
-               :delete projects-controller/deleteproject}
-              ;; identity will just pass throug the req as is,
-              ;; making it a good default precondition.
-              (t/r "/todos" identity
-                   {:get list-todos})))))
+    [(t/r "/projects" identity
+          {:get projects-controller/list-projects
+           :post projects-controller/create-project}
+          ;; Preconditions are called before any handlers, both here
+          ;; and nested. Should return the req (possibly with modifications)
+          ;; or nil to cause a 404.
+          (t/r "/:project-id" projects-controller/get-project-precondition
+               {:get projects-controller/get-project
+                :put projects-controller/update-project
+                :delete projects-controller/deleteproject}
+               ;; identity will just pass throug the req as is,
+               ;; making it a good default precondition.
+               (t/r "/todos" identity
+                    {:get list-todos})))]))
 
 (def login-handler
   (t/handler
     ;; No middleware wrapping here
-    (t/r "/login" identity
-         {:post logins-controller/log-in})))
+    [(t/r "/login" identity
+          {:post logins-controller/log-in})]))
 
 (def lein-ring-app-handler
   (t/chained-handlers
