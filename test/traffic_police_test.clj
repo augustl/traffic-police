@@ -123,6 +123,13 @@
     (is (= "hmz"
            (:other-thing (handler {:uri "/foo" :request-method :get}))))))
 
+(deftest returning-nil-breaks-resource-chain
+  (let [handler (t/handler
+                 [["/foo" identity {:get (fn [req])}]
+                  ["/*" identity {:get echo-handler}]])]
+    (is (= nil
+           (handler {:uri "/foo" :request-method :get})))))
+
 (defrecord CustomRequest [fancy-method nice-path dem-route-params])
 (extend-protocol t/TrafficPoliceRequest
   CustomRequest

@@ -51,17 +51,21 @@
    (flatten-resources resources)))
 
 (defn- chained-resources
+  "A bit of manual looping action here. We want to try the next resource only if
+   the path doesn't match. If we just used 'some', we'd also try the next resource
+   if the handler returns nil, something we don't want in this case."
   [resources]
   (fn [req]
-    (some
-     (fn [{:keys [route route-preconditions wrapped-route-handlers]}]
-       (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-         (if-let [handler (get wrapped-route-handlers (get-request-method req))]
-           (handler (-> req
-                        (assoc-route-params route-match)
-                        (assoc :__tp-preconditions route-preconditions)))
-           (get-method-not-allowed-response req))))
-     resources)))
+    (loop [{:keys [route route-preconditions wrapped-route-handlers]} (first resources)
+           remaining (rest resources)]
+      (if-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
+        (if-let [handler (get wrapped-route-handlers (get-request-method req))]
+          (handler (-> req
+                       (assoc-route-params route-match)
+                       (assoc :__tp-preconditions route-preconditions)))
+          (get-method-not-allowed-response req))
+        (if (not (empty? remaining))
+          (recur (first remaining) (rest remaining)))))))
 
 (defn chained-handlers
   "Chains a list of request handlers, returning the response of the first
