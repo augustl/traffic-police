@@ -65,14 +65,14 @@ The `handler` function returns a plain ring handler.
 ```
 
 * GET /projects - projects-controller/list-projects is called.
-* GET /projects/123 - projects-controller/get-project is called. But first, the get-project-precondition function is called. This function will access (-> req :url-params :project-id) and find the project in the database. If this function returns nil, routing will halt. If it returns the full request map, routing continues.
+* GET /projects/123 - projects-controller/get-project is called. But first, the get-project-precondition function is called. This function will access `(-> req :route-params :project-id)` and find the project in the database. If this function returns nil, routing will halt. If it returns the full request map, routing continues.
 * GET /projects/123/todos - nesting will first call the precondition to find the project, so you only have to write that code once.
 
 ```clj
 (defn get-project-precondition
   [req]
   ;; Returns nil if ask-db-for-project returns nil
-  (if-let [project (ask-db-for-project (-> req :url-params :project-id))]
+  (if-let [project (ask-db-for-project (-> req :route-params :project-id))]
     ;; Return full req but with project assoced onto it, so we don't have to
     ;; read it form the db again
     (assoc req :project project)))
