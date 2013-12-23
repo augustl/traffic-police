@@ -37,24 +37,31 @@
   [resources middleware-wrapper]
   (map
    (fn [[route-path route-preconditions route-handlers]]
-     (let [route (clout.core/route-compile route-path)
-           wrapped-route-handlers (zipmap
-                                   (keys route-handlers)
-                                   (map
-                                    (fn [handler]
-                                      (middleware-wrapper
-                                       (fn [req]
-                                         (when-let [processed-req (run-preconditions (:__tp-preconditions req) req)]
-                                           (handler processed-req)))))
-                                    (vals route-handlers)))]
-       (fn [req]
-         (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
-           (if-let [handler (get wrapped-route-handlers (get-request-method req))]
-             (handler (-> req
-                          (assoc-route-params route-match)
-                          (assoc :__tp-preconditions route-preconditions)))
-             (get-method-not-allowed-response req))))))
+     {:route (clout.core/route-compile route-path)
+      :route-preconditions route-preconditions
+      :wrapped-route-handlers (zipmap
+                               (keys route-handlers)
+                               (map
+                                (fn [handler]
+                                  (middleware-wrapper
+                                   (fn [req]
+                                     (when-let [processed-req (run-preconditions (:__tp-preconditions req) req)]
+                                       (handler processed-req)))))
+                                (vals route-handlers)))})
    (flatten-resources resources)))
+
+(defn- chained-resources
+  [resources]
+  (fn [req]
+    (some
+     (fn [{:keys [route route-preconditions wrapped-route-handlers]}]
+       (when-let [route-match (clout.core/route-matches route {:path-info (get-request-path req)})]
+         (if-let [handler (get wrapped-route-handlers (get-request-method req))]
+           (handler (-> req
+                        (assoc-route-params route-match)
+                        (assoc :__tp-preconditions route-preconditions)))
+           (get-method-not-allowed-response req))))
+     resources)))
 
 (defn chained-handlers
   "Chains a list of request handlers, returning the response of the first
@@ -67,7 +74,7 @@
   ([resources]
      (handler identity resources))
   ([middleware-wrapper resources]
-     (apply chained-handlers (compile-resources resources middleware-wrapper))))
+     (chained-resources (compile-resources resources middleware-wrapper))))
 
 (defmacro r
   "Convenience macro for a larger indentation level in most editors."
